@@ -1,0 +1,2 @@
+# keep Windows line endings in the double-click file
+*.cmd -text

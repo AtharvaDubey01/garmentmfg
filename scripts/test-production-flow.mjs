@@ -1284,3 +1284,4 @@ check('QA-L9 is gone from Job Order Booking', !(await call('GET', '/transactions
 
 console.log(`\nRESULT: ${pass} passed, ${fail} failed`);
 if (failures.length) console.log('Failed:\n - ' + failures.join('\n - '));
+process.exit(fail ? 1 : 0);

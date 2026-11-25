@@ -1,0 +1,105 @@
+# Automatic check that "make your own exe" works for people:
+#  - Windows: double-click equivalent of MAKE-EXE.cmd, then INSTALL the result like a company would
+#    (C:\GarmentMFG) and run the three test suites against the installed app with the passwords it made.
+#  - Mac and Linux: npm run make-exe (the installer it makes is the same Windows program).
+# Runs when the build files change, or by hand: Actions -> "Make the exe" -> Run workflow.
+# The passwords made here are random throw-away ones for this test only.
+name: Make the exe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'packaging/**'
+      - 'MAKE-EXE.cmd'
+      - 'package.json'
+      - '.github/workflows/make-exe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows - make it, install it, test it
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Make the exe (same as double-clicking MAKE-EXE.cmd)
+        shell: cmd
+        run: echo.| MAKE-EXE.cmd
+
+      - name: Check what was made
+        shell: pwsh
+        run: |
+          Get-ChildItem my-exe | Format-Table Name, Length
+          foreach ($f in 'GarmentMFGSetup.exe', 'MY-PASSWORDS.txt', 'GarmentMFG Setup Guide.pdf') {
+            if (-not (Test-Path "my-exe\$f")) { throw "missing my-exe\$f" }
+          }
+
+      - name: Install it like a company would (C:\GarmentMFG)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force C:\GarmentMFG | Out-Null
+          Copy-Item my-exe\GarmentMFGSetup.exe C:\GarmentMFG\
+          Set-Location C:\GarmentMFG
+          "`r`n`r`n`r`n" | .\GarmentMFGSetup.exe
+          $code = $LASTEXITCODE
+          if (Test-Path C:\GarmentMFG\data\logs\setup.log) { Get-Content C:\GarmentMFG\data\logs\setup.log }
+          if ($code -ne 0) { throw "the installer stopped with code $code" }
+          $ok = $false
+          for ($i = 0; $i -lt 60 -and -not $ok; $i++) {
+            try { $ok = (Invoke-RestMethod http://127.0.0.1:6060/api/health).status -eq 'ok' } catch { Start-Sleep 2 }
+          }
+          if (-not $ok) { throw 'the installed app did not answer on http://127.0.0.1:6060' }
+          Get-Service GarmentMFG, GarmentMFGDatabase | Format-Table Name, Status
+
+      - name: Test the installed app (with the passwords from MY-PASSWORDS)
+        shell: pwsh
+        run: |
+          $pw = Get-Content packaging\build-config.json | ConvertFrom-Json
+          $cfg = Get-Content C:\GarmentMFG\data\garmentmfg-config.json | ConvertFrom-Json
+          $env:GARMENTMFG_API = 'http://127.0.0.1:6060/api'
+          $env:PGHOST = '127.0.0.1'; $env:PGPORT = '5433'; $env:PGUSER = 'garmentmfg'; $env:PGDATABASE = 'garmentmfg'
+          $env:PGPASSWORD = $pw.dbPassword
+          $env:GARMENTMFG_SESSION_SECRET = $cfg.sessionSecret
+          node scripts/test-production-flow.mjs | Select-String -Pattern 'FAIL|RESULT'
+          if ($LASTEXITCODE) { throw 'production-flow test failed' }
+          node scripts/test-balance-reports.mjs | Select-String -Pattern 'FAIL|RESULT'
+          if ($LASTEXITCODE) { throw 'balance-reports test failed' }
+          & C:\GarmentMFG\pgsql\bin\psql.exe -q -f scripts/test-production-flow-cleanup.sql | Out-Null
+          node scripts/test-logins-and-backups.mjs $pw.supportPassword | Select-String -Pattern 'FAIL|RESULT'
+          if ($LASTEXITCODE) { throw 'logins-and-backups test failed' }
+
+  mac:
+    name: Mac - make it
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Make the exe
+        run: npm run make-exe
+      - name: Check what was made
+        run: ls -la my-exe && test -f my-exe/GarmentMFGSetup.exe && test -f my-exe/MY-PASSWORDS.txt
+
+  linux:
+    name: Linux - make it
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Make the exe
+        run: npm run make-exe
+      - name: Check what was made
+        run: ls -la my-exe && test -f my-exe/GarmentMFGSetup.exe && test -f my-exe/MY-PASSWORDS.txt

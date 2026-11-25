@@ -30,3 +30,7 @@ server/db/backups/
 
 # Build-time default passwords (secrets): keep local, never commit
 packaging/build-config.json
+
+# made by `npm run make-exe` / MAKE-EXE.cmd: downloaded tools + build scratch, and the result
+.build/
+my-exe/

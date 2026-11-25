@@ -12,15 +12,15 @@
 //   5. GarmentMFGSetup.exe is itself a Node .exe that carries the whole app (payload.7z) and the
 //      7-Zip extractor inside it, so there is just ONE file to hand to the client.
 //
-// This runs on the Mac. Node 24.22.1 (same version for both the blob and the Windows node.exe)
-// and the Windows parts are downloaded once into ../../garmentmfg_build/downloads (see notes below).
-// Output: ../../garmentmfg_build/GarmentMFGSetup.exe
+// It runs on Windows, a Mac or Linux. The easy way is `npm run make-exe` in the project folder
+// (or double-click MAKE-EXE.cmd on Windows): it installs the packages, downloads the tools below
+// into .build/ (Node 24.22.1, PostgreSQL 16.15 for Windows, WinSW, 7-Zip, pgweb), makes the
+// passwords and then runs this file. The result is always a WINDOWS installer.
+// Output: .build/GarmentMFGSetup.exe  (make-exe copies it to my-exe/)
 //
-//   cd packaging && npm install && npm run build
-//
-// You can change the default passwords for this build:
-//   GARMENTMFG_DEFAULT_DB_PASSWORD=... GARMENTMFG_DEFAULT_SUPPORT_PASSWORD=... npm run build
-import { execFileSync } from 'child_process';
+// The default passwords come from packaging/build-config.json (git-ignored), or from
+//   GARMENTMFG_DEFAULT_DB_PASSWORD=... GARMENTMFG_DEFAULT_SUPPORT_PASSWORD=...
+import { execFileSync, execSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -32,19 +32,24 @@ import * as ResEdit from 'resedit';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const BUILD = path.resolve(REPO, '../garmentmfg_build'); // kept OUTSIDE the project
+const BUILD = process.env.GARMENTMFG_BUILD_DIR ? path.resolve(process.env.GARMENTMFG_BUILD_DIR) : path.join(REPO, '.build'); // git-ignored
 const DOWN = path.join(BUILD, 'downloads');
-const STAGE = path.join(BUILD, 'stage'); // extracted Node + PostgreSQL (made earlier)
+const STAGE = path.join(BUILD, 'stage'); // unpacked Node, PostgreSQL and 7-Zip (made by make-exe)
 const OUT = path.join(BUILD, 'GarmentMFGSetup.exe');
 const WORK = path.join(BUILD, 'work'); // scratch for this build
 const PAYLOAD = path.join(BUILD, 'payload'); // what the installer will carry
 
 const NODE_VERSION = 'v24.22.1';
-const MAC_NODE = path.join(STAGE, 'node-v24.22.1-darwin-arm64', 'bin', 'node');
-const WIN_NODE = path.join(STAGE, 'node-v24.22.1-win-x64', 'node.exe');
+const WIN = process.platform === 'win32';
+const WIN_NODE = path.join(STAGE, `node-${NODE_VERSION}-win-x64`, 'node.exe');
+// The blob is made by the SAME Node version as the Windows node.exe, running on this computer
+const HOST = { 'darwin-arm64': 'darwin-arm64', 'darwin-x64': 'darwin-x64', 'linux-x64': 'linux-x64' }[`${process.platform}-${process.arch}`];
+const HOST_NODE = WIN ? WIN_NODE : HOST ? path.join(STAGE, `node-${NODE_VERSION}-${HOST}`, 'bin', 'node') : '';
 const PGSQL = path.join(STAGE, 'pgsql');
 const WINSW = path.join(DOWN, 'WinSW-x64.exe');
 const SEVEN_ZA = path.join(DOWN, '7zextra', 'x64', '7za.exe'); // official 7-Zip extractor (goes inside GarmentMFGSetup.exe)
+// 7-Zip that runs on THIS computer, to pack the payload: 7za.exe on Windows, 7zz on Mac / Linux
+const SEVEN_HERE = WIN ? SEVEN_ZA : path.join(STAGE, '7zip', '7zz');
 const PGWEB = path.join(DOWN, 'pgweb', 'pgweb_windows_amd64'); // database viewer, started by GarmentMFGSupport.exe view-db
 const SEA_FUSE = 'fce680ab2cc467b6e072b8b5df1996b2'; // Node's fixed SEA fuse string
 
@@ -72,27 +77,23 @@ function sh(program, args, opts = {}) {
 }
 
 function checkInputs() {
+  if (!HOST_NODE) throw new Error(`This computer (${process.platform} ${process.arch}) can't build the installer. Use Windows (64-bit), a Mac or 64-bit Linux.`);
   const need = [
-    [MAC_NODE, `Mac Node ${NODE_VERSION}`],
+    [HOST_NODE, `Node ${NODE_VERSION} for this computer`],
     [WIN_NODE, `Windows node.exe ${NODE_VERSION}`],
     [path.join(PGSQL, 'bin', 'postgres.exe'), 'PostgreSQL (stripped) in stage/pgsql'],
     [WINSW, 'WinSW-x64.exe'],
     [SEVEN_ZA, '7za.exe (from 7-Zip Extra, x64)'],
     [PGWEB, 'pgweb_windows_amd64 (database viewer)'],
+    [SEVEN_HERE, '7-Zip for this computer'],
   ];
   const missing = need.filter(([f]) => !fs.existsSync(f));
   if (missing.length) {
     throw new Error(
       'Missing build inputs:\n' + missing.map(([f, name]) => `  - ${name}: ${f}`).join('\n') +
-      '\nDownload and extract them into ' + BUILD + ' first (see the top of this file).'
+      '\nRun `npm run make-exe` in the project folder: it downloads them into ' + BUILD + '.'
     );
   }
-  const seven = tryRun('7zz', ['i']);
-  if (!seven) throw new Error('7zz not found. Install it: brew install sevenzip');
-}
-
-function tryRun(program, args) {
-  try { return execFileSync(program, args, { encoding: 'utf8' }); } catch { return ''; }
 }
 
 /** scrypt hash of the default support password, exactly like server/src/passwords.js */
@@ -193,13 +194,14 @@ function makeExe(bundleFile, exe, assets = null) {
   if (assets) cfg.assets = assets;
   fs.writeFileSync(seaConfig, JSON.stringify(cfg, null, 2));
   step(`Building the blob for ${path.basename(exe)} (Node ${NODE_VERSION})`);
-  sh(MAC_NODE, ['--experimental-sea-config', seaConfig]);
+  sh(HOST_NODE, ['--experimental-sea-config', seaConfig]);
 
   fs.copyFileSync(WIN_NODE, exe);
   setExeDetails(exe);
   step(`Baking the blob into ${path.basename(exe)}`);
-  const postject = path.join(HERE, 'node_modules', '.bin', 'postject');
-  sh(postject, [exe, 'NODE_SEA_BLOB', blob, '--sentinel-fuse', `NODE_SEA_FUSE_${SEA_FUSE}`]);
+  // postject's own script, run with the Node running this build (works the same on every OS)
+  const postject = path.join(HERE, 'node_modules', 'postject', 'dist', 'cli.js');
+  sh(process.execPath, [postject, exe, 'NODE_SEA_BLOB', blob, '--sentinel-fuse', `NODE_SEA_FUSE_${SEA_FUSE}`]);
 }
 
 function stagePayload() {
@@ -223,7 +225,7 @@ function makePayloadArchive() {
   fs.rmSync(archive, { force: true });
   step('Packing the payload into payload.7z');
   // -mx=7: strong compression; "." = everything in PAYLOAD (so it extracts straight into the install folder)
-  sh('7zz', ['a', '-t7z', '-mx=7', '-r', archive, '.'], { cwd: PAYLOAD });
+  sh(SEVEN_HERE, ['a', '-t7z', '-mx=7', '-r', archive, '.'], { cwd: PAYLOAD });
   return archive;
 }
 
@@ -234,7 +236,7 @@ async function main() {
   fs.mkdirSync(WORK, { recursive: true });
 
   step('Building the web client (npm run build in client/)');
-  sh('npm', ['run', 'build'], { cwd: path.join(REPO, 'client') });
+  execSync('npm run build', { cwd: path.join(REPO, 'client'), stdio: 'inherit' }); // a command string: npm is npm.cmd on Windows
 
   const hash = await supportHash(DEFAULT_SUPPORT_PASSWORD);
   const defines = {
@@ -266,7 +268,7 @@ async function main() {
     `GarmentMFG build ${new Date().toISOString()}\n` +
     `Database password (user "garmentmfg"): ${DEFAULT_DB_PASSWORD}\n` +
     `KANVTECH support password:        ${DEFAULT_SUPPORT_PASSWORD}\n` +
-    `\nKeep this for the support sheet. Do NOT ship this file.\n`);
+    `\nKeep this private. Do NOT ship this file.\n`);
   console.log(`\n✅ Done: ${OUT}  (${size} MB)`);
   console.log(`   Default passwords written to ${path.join(BUILD, 'build-passwords.txt')}`);
 }

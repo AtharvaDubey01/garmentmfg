@@ -1,5 +1,7 @@
 # GarmentMFG — Garment Production & Piece-Rate Payroll
 
+[![Make the exe](https://github.com/AtharvaDubey01/garmentmfg/actions/workflows/make-exe.yml/badge.svg)](https://github.com/AtharvaDubey01/garmentmfg/actions/workflows/make-exe.yml)
+
 <img src="client/public/brand/garmentmfg-logo.png" alt="GarmentMFG" height="70">
 
 A production and payroll app for garment factories: job orders, lots, the steps (operations) each lot goes through with their piece rates, the pieces each worker makes every day, pieces passed from step to step, and the reports that come out of it — salary, process work, lot balances and more. Any company can install it and set its own name and logo.
@@ -24,7 +26,7 @@ The public installer starts with these. **They are public, so change them right 
 | **KANVTECH** — a hidden full-admin support login, and the **support code** that unlocks `GarmentMFGSupport.exe` | `Gmfg-FgVt-gUkZ-t6Su` | `.\GarmentMFGSupport.exe set-support-password` |
 | **Database** — the private PostgreSQL (user `garmentmfg`, port 5433, this PC only) | `GmfgDb-7Kdg-6pVX` | `.\GarmentMFGSupport.exe change-db-password` |
 
-If you build the installer yourself, you choose your own defaults (see *Build the Windows installer* below).
+If you [make the exe yourself](#make-your-own-exe-with-your-own-passwords), it gets its own random passwords instead.
 
 ## What it does
 
@@ -70,23 +72,62 @@ The app must be running (`npm run dev`).
 | `node scripts/test-balance-reports.mjs` | Lot Balance Sheet / Lot Summary against the raw tables |
 | `node scripts/test-logins-and-backups.mjs <support password>` | permanent logins, backups, Company Branding (50) — first set a support password on your dev database: `node server/tools/garmentmfg-support.js set-support-password` |
 
-## Build the Windows installer
+## Make your own exe (with your own passwords)
 
-Built on a Mac (Apple Silicon):
+You can make `GarmentMFGSetup.exe` yourself — the same installer as in Releases, but with **your own secret passwords**. One double-click (Windows) or one command (Mac); it downloads everything it needs by itself.
 
-```bash
-cd packaging
-cp build-config.example.json build-config.json   # put YOUR default passwords in it (git-ignored)
-npm install && npm run build                      # -> ../../garmentmfg_build/GarmentMFGSetup.exe
-```
+> **Windows only app.** The installer can be **made on Windows or on a Mac** (Linux works too), but the app **installs and runs only on Windows 10/11 (64-bit)**. Made on a Mac, it won't run on the Mac — copy it to a Windows PC.
 
-The one-time downloads it needs (Node for Mac + Windows, PostgreSQL 16 for Windows, WinSW, 7-Zip, pgweb) are listed at the top of `packaging/build-windows.mjs`. Details: [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) section 6.
+**You need:** [Node.js](https://nodejs.org) (the **LTS** version, 22 or newer) · about 2 GB of free disk space · internet the first time.
+
+### On Windows
+1. Install **Node.js** from [nodejs.org](https://nodejs.org) (LTS — just click Next through the installer).
+2. On this page click **Code → Download ZIP**, and unzip it to a **short** folder, e.g. `C:\garmentmfg`.
+3. Open that folder and **double-click `MAKE-EXE.cmd`**. (If Windows says "Windows protected your PC": **More info → Run anyway**.)
+4. Wait — about **10 minutes the first time**. When it's done, the **`my-exe`** folder opens by itself.
+
+### On a Mac
+1. Install **Node.js** from [nodejs.org](https://nodejs.org) (LTS).
+2. Click **Code → Download ZIP** and unzip it (or `git clone https://github.com/AtharvaDubey01/garmentmfg.git`).
+3. Open **Terminal** in that folder and run:
+   ```bash
+   npm run make-exe
+   ```
+4. Wait about 10 minutes the first time, then open the **`my-exe`** folder and copy `GarmentMFGSetup.exe` to the Windows PC.
+
+### What you get — the `my-exe` folder
+
+| File | What it is |
+|---|---|
+| `GarmentMFGSetup.exe` | your Windows installer — install it as in the [Setup Guide](docs/GarmentMFG-Setup-Guide.pdf) |
+| `MY-PASSWORDS.txt` | **your** passwords: KANVTECH (support login + support code) and database; ADMIN starts as `Admin`. **Keep it private.** |
+| `GarmentMFG Setup Guide.pdf` | how to install and use it |
+
+### Your passwords
+- The first run makes **strong random passwords** for your installer and keeps them in `packaging/build-config.json` (never uploaded — it's in `.gitignore`). Every installation made with your exe starts with them.
+- Running it again is quicker (the downloads are kept) and **uses the same passwords**.
+- **Choose your own:** before the first run, copy `packaging/build-config.example.json` to `packaging/build-config.json` and type them in (support password at least 10 characters, database at least 8).
+- **New random ones:** delete `packaging/build-config.json` and run it again.
+- After installing, the passwords can still be changed on the server PC (Setup Guide section 9).
+
+### If something goes wrong
+| Problem | Fix |
+|---|---|
+| "Node.js is not installed" | Install it from nodejs.org, then run it again |
+| A download failed | Check the internet and run it again — finished parts are kept |
+| Errors about long paths (Windows) | Move the folder to a short one, e.g. `C:\garmentmfg` |
+| Want to start completely fresh | Delete the `.build` and `my-exe` folders and run it again |
+
+### How it works
+`make-exe` ([packaging/make-exe.mjs](packaging/make-exe.mjs)) installs the packages, downloads the tools from their official sites and checks each one against its SHA-256 — Node.js 24.22.1, PostgreSQL 16.15 for Windows, WinSW 2.12.0, 7-Zip 25.01 and pgweb 0.16.2 — then runs [packaging/build-windows.mjs](packaging/build-windows.mjs): it builds the screens, bundles and obfuscates the server, puts it inside Windows `node.exe` (Node "single executable application") as `GarmentMFG.exe` and `GarmentMFGSupport.exe`, packs them with PostgreSQL, WinSW and pgweb, and wraps everything into one `GarmentMFGSetup.exe`.
+
+This is checked automatically on GitHub's own Windows, Mac and Linux machines — on Windows the exe is also installed and fully tested ([Make the exe](https://github.com/AtharvaDubey01/garmentmfg/actions/workflows/make-exe.yml)).
 
 ## Documents
 
 | File | What it covers |
 |---|---|
-| [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) | **Start here:** everything in one place — run, test, build, release, install, support, security, decisions |
+| [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) | **Start here:** everything in one place — run, test, make the exe, release, install, support, security, decisions |
 | [GARMENTMFG_HANDOFF.md](GARMENTMFG_HANDOFF.md) | How the app works: every rule, where the code is, the API, the database |
 | [docs/GarmentMFG-Setup-Guide.pdf](docs/GarmentMFG-Setup-Guide.pdf) | Installing and using it, for the company ([editable source](docs/guide-source/GarmentMFG-Setup-Guide.html)) |
 | [SUPPORT_GUIDE.md](SUPPORT_GUIDE.md) | Looking after an installation: updates, moving data, restore, passwords |
@@ -100,7 +141,7 @@ The one-time downloads it needs (Node for Mac + Windows, PostgreSQL 16 for Windo
 |---|---|
 | `client/` | The screens |
 | `server/` | The API; `server/db/` the database set-up files; `server/tools/` the support tool |
-| `packaging/` | Builds the Windows installer |
+| `packaging/` | Makes the Windows installer (`make-exe.mjs`, `build-windows.mjs`) |
 | `scripts/` | Automated tests, test data and clean-up scripts |
 | `docs/` | Setup Guide (PDF + source), brand files |
 

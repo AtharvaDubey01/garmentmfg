@@ -41,10 +41,12 @@ A production and piece-rate payroll app for **garment factories**: Job Order Boo
 |---|---|
 | `client/` | The screens (React + TypeScript, Vite). `client/src/pages/…` one file per screen; `client/public/brand/` the GarmentMFG logo |
 | `server/` | The API (Express). `server/src/routes/` one file per area (masters, transactions, reports, balance reports, admin, branding, auth, utility); `server/db/001…008_*.sql` the database set-up files; `server/tools/garmentmfg-support.js` the support tool |
-| `packaging/` | Builds the Windows installer: `build-windows.mjs` (the build), `entry-garmentmfg.js` (the app exe), `entry-support.js` (the support tool exe), `entry-setup.js` (the installer exe) |
+| `packaging/` | Makes the Windows installer: `make-exe.mjs` (the one-command build: passwords, packages, tools, build), `build-windows.mjs` (the build itself), `entry-garmentmfg.js` (the app exe), `entry-support.js` (the support tool exe), `entry-setup.js` (the installer exe) |
+| `MAKE-EXE.cmd` | Windows: double-click to make your own exe (runs `make-exe.mjs`) |
+| `.github/workflows/make-exe.yml` | GitHub's automatic check that making the exe works (Windows: make + install + test; Mac, Linux: make) |
 | `scripts/` | Automated tests, test data and clean-up SQL |
 | `docs/` | Setup Guide PDF + its editable HTML; the original GarmentMFG logo |
-| Outside the repo (never committed) | `../garmentmfg_build/` (build downloads, scratch, the built exe, `build-passwords.txt`), `../garmentmfg_backups/` (development backups) |
+| Never committed (git-ignored) | `.build/` (downloaded tools, build scratch, `build-passwords.txt`), `my-exe/` (the result), `packaging/build-config.json` (your passwords), `.env`; development backups go to `../garmentmfg_backups/` |
 
 How the app works in detail — every rule, the API, the database tables — is in [GARMENTMFG_HANDOFF.md](GARMENTMFG_HANDOFF.md).
 
@@ -91,21 +93,22 @@ The app must be running (`npm run dev`). Run all three after every change:
 
 ## 6. Build the Windows installer (exe)
 
-Built on a Mac with Apple Silicon. One-time setup:
-- `brew install sevenzip` (the `7zz` tool packs the payload)
-- `packaging/build-config.json` with **your** default passwords for new installs (copy `packaging/build-config.example.json`; it's git-ignored). You can also pass them as `GARMENTMFG_DEFAULT_DB_PASSWORD` / `GARMENTMFG_DEFAULT_SUPPORT_PASSWORD`.
-- The downloads in `../garmentmfg_build/downloads` + `stage`: Node **v24.22.1** for Mac (to make the app blob) and Windows (`node.exe`), PostgreSQL **16.15** Windows binaries (cut down to `bin/lib/share`), **WinSW v2.12.0** (becomes `GarmentMFGService.exe`), `7za.exe` from 7-Zip Extra 25.01, **pgweb v0.16.2** (database viewer). Exact names and paths are at the top of `packaging/build-windows.mjs`.
+**The easy way (anyone):** Windows — double-click `MAKE-EXE.cmd`; Mac / Linux — `npm run make-exe`. Needs only Node.js 22+ and internet the first time; the result is in `my-exe/` (`GarmentMFGSetup.exe`, `MY-PASSWORDS.txt`, the Setup Guide). Step-by-step for users: [README → Make your own exe](README.md#make-your-own-exe-with-your-own-passwords).
 
-```bash
-cd packaging
-npm install          # first time
-npm run build        # -> ../../garmentmfg_build/GarmentMFGSetup.exe  (+ build-passwords.txt, never ship it)
-shasum -a 256 ../../garmentmfg_build/GarmentMFGSetup.exe
-```
+The installer is always a **Windows** program: it can be made on Windows, a Mac or Linux, but installs and runs only on Windows 10/11 (64-bit).
 
-What the build does: builds the screens → bundles + obfuscates the server and the support tool → bakes each into a copy of Windows `node.exe` (Node single-executable) after setting its Properties → Details to "GarmentMFG" → packs the app, PostgreSQL, WinSW and pgweb into `payload.7z` → makes `GarmentMFGSetup.exe`, itself a Node single-executable carrying `payload.7z` + `7za.exe`.
+What `packaging/make-exe.mjs` does (Node built-ins only, so it runs before `npm install`):
+1. **Passwords:** uses `packaging/build-config.json` (git-ignored) or, if it's missing, makes strong random ones (no look-alike characters) and saves them there — so later builds keep the same passwords.
+2. **Packages:** `npm install` in the project, `server/`, `client/` and `packaging/`.
+3. **Tools** into `.build/` (git-ignored), each downloaded from its official site and checked against a pinned SHA-256 (list at the top of `make-exe.mjs`): Node.js **24.22.1** for Windows (`node.exe` inside the installer) and for this computer (makes the packed files — must be the same version), PostgreSQL **16.15** Windows binaries (only `bin` / `lib` / `share` are unpacked; `bin` keeps every `.dll` and `initdb`, `pg_ctl`, `pg_dump`, `pg_restore`, `postgres`, `psql`), **WinSW 2.12.0**, **7-Zip 25.01** (Extra's `7za.exe` goes inside the installer; `7zr.exe` / `7za.exe` on Windows or `7zz` on Mac/Linux does the unpacking and packing), **pgweb 0.16.2**. Already-downloaded files are reused.
+4. **Build:** runs `packaging/build-windows.mjs` with `GARMENTMFG_BUILD_DIR=.build`.
+5. **Result:** copies the exe and the Setup Guide to `my-exe/` and writes `MY-PASSWORDS.txt`.
+
+What `build-windows.mjs` does: builds the screens → bundles + obfuscates the server and the support tool → bakes each into a copy of Windows `node.exe` (Node single-executable, injected with `postject`) after setting its Properties → Details to "GarmentMFG" → packs the app, PostgreSQL, WinSW and pgweb into `payload.7z` → makes `GarmentMFGSetup.exe`, itself a Node single-executable carrying `payload.7z` + `7za.exe`. The default passwords are baked in at this step (the database one obfuscated, KANVTECH only as a hash).
 
 Why not a normal installer tool: NSIS (`makensis`) from Homebrew crashed on the build Mac and current 7-Zip no longer ships its installer stub — so the installer is a small Node program. The exe isn't code-signed, so Windows shows "Windows protected your PC" → **More info → Run anyway**.
+
+**Automatic check:** `.github/workflows/make-exe.yml` ("Make the exe" in GitHub Actions) runs when the build files change or by hand: on Windows it runs `MAKE-EXE.cmd`, installs the result into `C:\GarmentMFG` and runs the three test suites against the installed app with the passwords it made; on Mac and Linux it runs `npm run make-exe`.
 
 **Setup Guide PDF:** edit `docs/guide-source/GarmentMFG-Setup-Guide.html` and print it to PDF with Chrome, e.g.
 `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --no-pdf-header-footer --allow-file-access-from-files --print-to-pdf=docs/GarmentMFG-Setup-Guide.pdf "file://<full path to the .html>"`.
@@ -115,7 +118,7 @@ Why not a normal installer tool: NSIS (`makensis`) from Homebrew crashed on the 
 The exe is over 100 MB, too big for the code, so it goes on a **Release**:
 ```bash
 gh release create v1.1 --repo AtharvaDubey01/garmentmfg --target main --title "GarmentMFG v1.1" --notes-file notes.md \
-  ../garmentmfg_build/GarmentMFGSetup.exe docs/GarmentMFG-Setup-Guide.pdf
+  my-exe/GarmentMFGSetup.exe docs/GarmentMFG-Setup-Guide.pdf
 gh release view v1.1 --repo AtharvaDubey01/garmentmfg --json assets   # each "digest" must equal your local SHA-256
 ```
 Put the exe's size and SHA-256 in the notes so people can check their download.
@@ -130,7 +133,7 @@ Three logins/passwords matter:
 | **KANVTECH** | the support person | A hidden full-admin login that doesn't appear on any screen. Its password is also the **support code** that unlocks `GarmentMFGSupport.exe`. Stored only as a one-way (scrypt) hash. |
 | **Database password** | the support tool / the app | The private PostgreSQL of each install (user `garmentmfg`). Stored scrambled in `data\garmentmfg-config.json`. |
 
-- **Defaults** are baked into the exe at build time (`packaging/build-config.json`, git-ignored). The public release's defaults are published in the [README](README.md#default-passwords) — **change the KANVTECH and database passwords right after installing**: `.\GarmentMFGSupport.exe set-support-password` and `change-db-password` ([SUPPORT_GUIDE.md](SUPPORT_GUIDE.md) section 9). Building your own exe with your own defaults is the other way.
+- **Defaults** are baked into the exe at build time (`packaging/build-config.json`, git-ignored; `make-exe` makes random ones if it's missing and writes them to `my-exe/MY-PASSWORDS.txt`). The public release's defaults are published in the [README](README.md#default-passwords) — **change the KANVTECH and database passwords right after installing**: `.\GarmentMFGSupport.exe set-support-password` and `change-db-password` ([SUPPORT_GUIDE.md](SUPPORT_GUIDE.md) section 9). Making your own exe (section 6) gives it its own random passwords — the other way.
 - **Keep the KANVTECH password safe above all:** with it, the support tool can show or change everything else.
 - **What protects an installation:** the database answers only on that PC (localhost, port 5433) with its own password; the `data` folder is locked to administrators; the support tool needs the support code; logins and rights are checked on the server for every read and write. The source being public means the *way* things are stored is known (e.g. how the settings file scrambles the database password) — the protection is the passwords and the locked `data` folder, so change the defaults and keep Windows admin rights to trusted people.
 - **Nothing on screen names the support login or a vendor**; the Windows publisher is "GarmentMFG".
