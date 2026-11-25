@@ -1,0 +1,194 @@
+/*
+  GarmentMFG theme: orange on white, light grey page, white rounded cards.
+  Font: Inter (bundled with the app, works offline).
+  Every colour the screens use is defined here, so the whole look can be changed in one place.
+*/
+:root {
+  /* main colour (buttons, active menu, links) */
+  --primary: #ef7a45;
+  --primary-hover: #e0652e;
+  --primary-soft: #fff1ea; /* light orange: selected / highlighted backgrounds */
+
+
+  /* status colours: red is clearly different from the orange */
+  --success: #16a34a;
+  --success-soft: #e8f7ee;
+  --warning: #d97706;
+  --warning-soft: #fef3e2;
+  --danger: #dc2626;
+  --danger-soft: #fdecec;
+  --info: #ef7a45; /* table header (restyled in a later step) */
+  --secondary: #94a3b8;
+
+  /* text, page, cards, lines */
+  --text-main: #4b5563;
+  --text-heading: #111827;
+  --text-muted: #6b7280;
+  --bg-light: #f4f5f7; /* page background */
+  --bg-card: #ffffff;
+  --border-color: #e5e7eb;
+
+  /* shape */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+
+  --font-family: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* space around every page: 24px top + 16px bottom padding + 36px footer (see AppLayout) */
+  --page-chrome: 76px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  color: var(--text-main);
+  background-color: var(--bg-light);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Soft, rounded look for every page (inside <main>).
+   Many screens still carry older inline styles; these rules round their corners
+   and give tables one clean header style, without touching what the screens do.
+   Error highlights (red borders) are left alone on purpose.
+   --------------------------------------------------------------------------- */
+main input:not([type='checkbox']):not([type='radio']),
+main select,
+main textarea {
+  border-radius: var(--radius-sm) !important;
+  font-family: inherit;
+}
+main input:not([type='checkbox']):not([type='radio']):focus,
+main select:focus,
+main textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(239, 122, 69, 0.18);
+}
+main button {
+  border-radius: var(--radius-sm) !important;
+  font-family: inherit;
+}
+main input[type='checkbox'],
+main input[type='radio'] {
+  accent-color: var(--primary);
+}
+
+/* tables: orange header row (same orange as the buttons) with white column titles, thin lines, soft hover */
+main thead tr,
+main thead th {
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+/* the Lot Operation print sheet keeps its plain light-grey header (it goes on paper) */
+#printable-lot-area thead tr,
+#printable-lot-area thead th {
+  background-color: #f9fafb !important;
+  color: var(--text-muted) !important;
+}
+main thead th {
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--border-color);
+}
+main thead button {
+  color: inherit !important;
+}
+main tbody tr {
+  transition: background-color 0.12s;
+}
+
+/* Pages with a table: the page is exactly one screen tall (no empty grey space below),
+   the table box takes the space that is left and scrolls inside if it has more rows. */
+.fill-screen {
+  height: calc(100vh - var(--page-chrome));
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+}
+.table-box {
+  flex: 1 1 0;
+  min-height: 160px;
+  overflow: auto;
+}
+.table-box thead th {
+  position: sticky; /* column titles stay visible while scrolling */
+  top: 0;
+  z-index: 1;
+}
+/* Reports: the bold Total row stays at the bottom of the table box */
+.table-box tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background-color: #f3f4f6;
+  color: var(--text-heading);
+  font-weight: 700;
+  border-top: 2px solid var(--border-color);
+}
+
+/* Plain data table (Process Entry list) */
+.garmentmfg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.garmentmfg-table th,
+.garmentmfg-table td {
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+}
+.garmentmfg-table tbody tr:hover {
+  background-color: #fafafa;
+}
+
+a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #212529 !important;
+    padding: 0 !important;
+  }
+  .no-print,
+  nav,
+  aside,
+  header,
+  .sidebar,
+  .navbar,
+  .modal-backdrop,
+  .btn,
+  button,
+  .pagination,
+  .card-footer {
+    display: none !important;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+  .table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+  .table th,
+  .table td {
+    border: 1px solid #dee2e6 !important;
+    padding: 6px 10px !important;
+  }
+}

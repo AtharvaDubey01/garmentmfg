@@ -1,0 +1,32 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment secrets (NEVER commit secrets to git)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+client/dist/
+dist/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.suo
+*.user
+*.zip
+
+# Database backups hold real data: keep them outside the project (../garmentmfg_backups/), never in git
+server/db/backups/
+*.dump
+
+# Build-time default passwords (secrets): keep local, never commit
+packaging/build-config.json

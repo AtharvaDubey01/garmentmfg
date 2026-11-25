@@ -1,0 +1,15 @@
+{
+  "name": "garmentmfg-packaging",
+  "private": true,
+  "description": "Builds GarmentMFGSetup.exe (see build-windows.mjs). Not part of the app.",
+  "type": "module",
+  "scripts": {
+    "build": "node build-windows.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "javascript-obfuscator": "5.9.0",
+    "postject": "1.0.0-alpha.6",
+    "resedit": "^3.1.0"
+  }
+}

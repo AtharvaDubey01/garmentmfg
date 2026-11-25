@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GarmentMFG Setup Guide</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  :root { --orange: #EF7A45; --ink: #1f2430; --muted: #5b6270; --line: #e6e8ec; --soft: #fff4ee; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  header { border-bottom: 3px solid var(--orange); padding-bottom: 10px; margin-bottom: 14px; }
+  h1 { font-size: 22pt; margin: 0; letter-spacing: -0.3px; }
+  h1 span { color: var(--orange); }
+  .sub { color: var(--muted); margin-top: 4px; }
+  h2 { font-size: 13pt; margin: 18px 0 6px; display: flex; align-items: center; gap: 8px; }
+  h2 .n { background: var(--orange); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 10pt; flex: none; }
+  section { break-inside: avoid; }
+  ol, ul { margin: 6px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+  code { font-family: "SF Mono", Consolas, Menlo, monospace; font-size: 9.5pt; background: #f3f4f6; padding: 1px 5px; border-radius: 4px; white-space: nowrap; }
+  .box { background: var(--soft); border-left: 4px solid var(--orange); padding: 9px 12px; border-radius: 6px; margin: 8px 0; }
+  .warn { background: #fff8e6; border-left-color: #e0a100; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 10pt; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--orange); color: #fff; font-weight: 600; }
+  .muted { color: var(--muted); }
+  footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="../../client/public/brand/garmentmfg-logo.png" alt="GarmentMFG" style="height:46px;display:block;margin-bottom:8px"><h1>Setup Guide</h1>
+  <div class="sub">Garment production &amp; payroll · how to install it and start using it</div>
+</header>
+
+<section>
+<h2><span class="n">1</span>What you get</h2>
+<p>One file: <b>GarmentMFGSetup.exe</b>. It contains everything — the program and its own private database. Nothing else needs to be installed.</p>
+<p>GarmentMFG is installed on <b>one PC only</b> (the <b>server PC</b>). Every other PC in the office just opens GarmentMFG in a web browser — nothing is installed on them.</p>
+</section>
+
+<section>
+<h2><span class="n">2</span>Before you start</h2>
+<ul>
+  <li>Pick the <b>server PC</b>: Windows 10 or 11 (64-bit), on the office network, and one that <b>stays switched on</b> during working hours.</li>
+  <li>You must be able to click <b>"Yes"</b> on the Windows administrator prompt on that PC.</li>
+  <li>About <b>1 GB</b> of free space on the drive you install to.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">3</span>Install (about 5 minutes)</h2>
+<ol>
+  <li>On the server PC, make a new folder for GarmentMFG, e.g. <code>D:\GarmentMFG</code> (a fixed drive — not a USB stick).</li>
+  <li>Copy <b>GarmentMFGSetup.exe</b> into that folder.</li>
+  <li>Double-click <b>GarmentMFGSetup.exe</b>.</li>
+  <li>If a blue box says <i>"Windows protected your PC"</i>, click <b>More info</b>, then <b>Run anyway</b>. (It appears only because the file is not signed yet; it is safe.)</li>
+  <li>Click <b>Yes</b> on the Windows prompt (this gives it permission to install).</li>
+  <li>A window shows the folder — press any key to continue.</li>
+  <li>Wait about a minute. When it finishes it shows two web addresses. Done.</li>
+</ol>
+<div class="box">A <b>GarmentMFG</b> shortcut is placed on the desktop. Do <b>not</b> move or rename the GarmentMFG folder afterwards.</div>
+</section>
+
+<section>
+<h2><span class="n">4</span>Open GarmentMFG</h2>
+<table>
+  <tr><th>Where</th><th>Address</th></tr>
+  <tr><td>On the server PC itself</td><td><code>http://localhost:6060</code> (or the desktop "GarmentMFG" shortcut)</td></tr>
+  <tr><td>On any other office PC</td><td><code>http://SERVER-IP:6060</code> &nbsp;e.g. <code>http://192.168.1.33:6060</code></td></tr>
+</table>
+<p><b>Find the server PC's IP address</b> (on the server PC): open <b>Command Prompt</b>, type <code>ipconfig</code> and press Enter. Look for <b>IPv4 Address</b> under your Wi-Fi or Ethernet — a number like <b>192.168.1.33</b>. (Not "Default Gateway": that is the router.) Every other PC then uses <code>http://192.168.1.33:6060</code>. Open that address in Chrome/Edge on each employee PC and save it as a bookmark or desktop shortcut.</p>
+<div class="box"><b>Keep the address the same:</b> the router can give the server PC a different number after a restart, and then the bookmarks stop working. Ask whoever looks after the router to <b>reserve</b> this number for the server PC (often called "DHCP reservation" or "static IP" in the router settings). If an address ever stops working, check <code>ipconfig</code> again on the server PC.</div>
+</section>
+
+<section>
+<h2><span class="n">5</span>First login</h2>
+<p>Log in with the administrator account:</p>
+<table>
+  <tr><th>Employee Code</th><th>Password</th></tr>
+  <tr><td><b>ADMIN</b></td><td><b>Admin</b></td></tr>
+</table>
+<div class="warn box"><b>Please change this password right away.</b> After logging in, go to <b>Admin → Create Login</b>, open <b>ADMIN</b>, set a new password and save it. Then create logins for your staff and set what each person can see.</div>
+</section>
+
+<section>
+<h2><span class="n">6</span>Make it yours: company name and logo</h2>
+<p>Set your company's name and logo once, and they appear on the login page, the menu, the home page, printed Job Orders and Lot Operation sheets, and report exports.</p>
+<ol>
+  <li>Log in as <b>ADMIN</b> and open <b>Admin → Company Branding</b>.</li>
+  <li>Type your <b>Company name</b> (e.g. "ABC Garments (P) Ltd").</li>
+  <li>Click <b>Choose logo…</b> and pick your logo (PNG or JPG — a PNG with a see-through background looks best). Big pictures are made smaller automatically.</li>
+  <li>Click <b>Save</b>. Until you do this, the app shows the GarmentMFG name and logo.</li>
+</ol>
+</section>
+
+<section>
+<h2><span class="n">7</span>Everyday use &amp; data safety</h2>
+<ul>
+  <li><b>Always on:</b> GarmentMFG starts automatically with Windows and keeps running in the background — staff just open the web address and log in.</li>
+  <li><b>Automatic backups:</b> GarmentMFG backs up all your data by itself, every day, and keeps six months.</li>
+  <li><b>Report headings:</b> when you export a report to PDF, Excel or Print, a small box lets you type the title (and a second line) for the top of the report; your logo is added to PDFs and printouts.</li>
+  <li><b>Keep your own copy:</b> any time, log in as admin → <b>Backups → Download full backup</b> to save one complete file (e.g. onto a pendrive).</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">8</span>Updating to a new version</h2>
+<p>When you get a newer <b>GarmentMFGSetup.exe</b>, install it over the old one. All your data stays.</p>
+<ol>
+  <li><i>(Recommended)</i> Keep a copy first: log in as admin → <b>Backups → Download full backup</b> and save the file (e.g. onto a pendrive).</li>
+  <li>Copy the new <b>GarmentMFGSetup.exe</b> into the <b>same GarmentMFG folder</b> on the server PC (e.g. <code>D:\GarmentMFG</code>), replacing the old file.</li>
+  <li>Double-click it, and click <b>Yes</b> on the Windows prompt (and <b>More info → Run anyway</b> if the blue box appears).</li>
+  <li>The window says <b>"GarmentMFG will be UPDATED in this folder"</b> — press any key to continue.</li>
+  <li>Wait about a minute. It first saves a backup of all your data, then puts in the new version and starts GarmentMFG again.</li>
+  <li>Refresh the browser on the office PCs. Everything is still there: job orders, entries, reports, logins and passwords, company name and logo.</li>
+</ol>
+<div class="box">Always run it in the <b>same folder</b> where GarmentMFG is installed. If you run it from another folder, it stops and shows you where GarmentMFG is — nothing is changed. To move GarmentMFG to another PC, ask your software support: they bring all the data across.</div>
+</section>
+
+<section>
+<h2><span class="n">9</span>Change the built-in passwords</h2>
+<p>Besides <b>ADMIN</b>, every installation has two built-in passwords. <b>This public download uses the ones below, which anyone can read here — change both right after installing.</b></p>
+<table>
+  <tr><th>What</th><th>Default</th></tr>
+  <tr><td><b>KANVTECH</b> — a hidden full-admin login, and the <b>support code</b> that unlocks the support tool <code>GarmentMFGSupport.exe</code></td><td><code>Gmfg-FgVt-gUkZ-t6Su</code></td></tr>
+  <tr><td><b>Database</b> — the private database (user <code>garmentmfg</code>, answers only on the server PC)</td><td><code>GmfgDb-7Kdg-6pVX</code></td></tr>
+</table>
+<ol>
+  <li>On the server PC, right-click <b>Start</b> → <b>Terminal (Admin)</b> → <b>Yes</b>, and go to the GarmentMFG folder: <code>cd "D:\GarmentMFG"</code></li>
+  <li><code>.\GarmentMFGSupport.exe set-support-password</code> → type the current support code (above), then a new one twice (at least 10 characters).</li>
+  <li><code>.\GarmentMFGSupport.exe change-db-password</code> → support code → a new database password twice (at least 8 characters). Then double-click <b>Stop GarmentMFG</b> and <b>Start GarmentMFG</b> on the desktop.</li>
+</ol>
+<div class="warn box"><b>Write the new passwords down somewhere safe.</b> The KANVTECH password must never be lost: with it, the support tool can show or change everything else.</div>
+</section>
+
+</body>
+</html>

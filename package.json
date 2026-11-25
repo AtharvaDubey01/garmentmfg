@@ -1,0 +1,20 @@
+{
+  "name": "garmentmfg",
+  "version": "1.0.0",
+  "description": "GarmentMFG - Garment Production & Piece-Rate Payroll System",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "db:import": "npm --prefix server run db:import",
+    "db:schema": "psql -d garmentmfg -f server/db/001_schema.sql",
+    "db:studio": "pgweb --db=garmentmfg --ssl=disable --listen=8083",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
